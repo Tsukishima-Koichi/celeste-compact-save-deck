@@ -19,6 +19,9 @@ internal sealed class DeckController : IDisposable
     private DeckOverlay? overlay;
     private bool prepared;
     private bool entering;
+    private bool slotsHidden;
+    private bool layoutAnimating;
+    private MTexture? deckCardTexture;
     private readonly SavePageMotion pageMotion = new();
     private int focusedIndex;
     private float scroll, targetScroll;
@@ -66,6 +69,7 @@ internal sealed class DeckController : IDisposable
         prepared = false;
         entering = true;
         pageMotion.ArmEntry();
+        slotsHidden = false;
     }
 
     internal void Prepare()
@@ -201,6 +205,7 @@ internal sealed class DeckController : IDisposable
             else retiredKeys.Add(pair.Key);
         }
         foreach (string key in retiredKeys) visualRows.Remove(key);
+        layoutAnimating = visualRows.Values.Any(v => !v.Motion.Complete || v.Retiring);
         visualSaves.Clear();
         foreach (VisualRow visual in visualRows.Values)
             if (visual.Row.Slot is int slot) visualSaves[slot] = visual;
@@ -208,11 +213,14 @@ internal sealed class DeckController : IDisposable
 
     private void AdvanceMotion()
     {
+        if (!layoutAnimating) return;
+        layoutAnimating = false;
         retiredKeys.Clear();
         foreach (var pair in visualRows)
         {
             VisualRow visual = pair.Value;
             visual.Motion.Advance(Engine.DeltaTime);
+            layoutAnimating |= !visual.Motion.Complete;
             if (visual.Retiring && visual.Motion.Complete) retiredKeys.Add(pair.Key);
         }
         foreach (string key in retiredKeys)
@@ -239,18 +247,20 @@ internal sealed class DeckController : IDisposable
         ? new Vector2(visual.Motion.Current.X, visual.Motion.Current.Y - scroll)
         : new Vector2(960f, -2500f);
 
-    internal Vector2 PositionFor(int slot) => IdlePositionFor(slot) +
-        Vector2.UnitX * pageMotion.Offset(DeckDocument.SaveKey(slot));
+    internal Vector2 PositionFor(int slot) => visualSaves.TryGetValue(slot, out var visual)
+        ? new Vector2(visual.Motion.Current.X + pageMotion.Offset(visual.Row.Key), visual.Motion.Current.Y - scroll)
+        : new Vector2(960f, -2500f);
+
     internal bool IsVisible(int slot)
     {
-        if (!Ready || !pageMotion.CanDraw(DeckDocument.SaveKey(slot)) || !visualSaves.TryGetValue(slot, out var visual)) return false;
+        // Reuse the row's stable key: this runs several times per visible card per frame.
+        if (!Ready || !visualSaves.TryGetValue(slot, out var visual) || !pageMotion.CanDraw(visual.Row.Key)) return false;
         float y = visual.Motion.Current.Y - scroll;
         return y >= -200f && y <= 1280f;
     }
-
     internal void SyncSlotsForRender()
     {
-        if (!Ready || Owner.SlotSelected) return;
+        if (!Ready || Owner.SlotSelected || (!pageMotion.Drawing && slotsHidden)) return;
         // Show/Hide can run after a slot's Update, and Depth changes reorder entity updates.
         // Reconcile once after every update to give native cards and deck covers the same frame.
         foreach (OuiFileSelectSlot slot in Owner.Slots)
@@ -259,9 +269,11 @@ internal sealed class DeckController : IDisposable
             slot.Visible = IsVisible(slot.FileSlot);
             if (slot.Visible) slot.Position = PositionFor(slot.FileSlot);
         }
+        slotsHidden = !pageMotion.Drawing;
     }
     internal void Tick(bool input)
     {
+        if (!entering && !pageMotion.Drawing && menu == null) return;
         if (toastTime > 0) toastTime -= Engine.DeltaTime;
         pageMotion.Advance(Engine.DeltaTime);
         if (menu != null)
@@ -610,9 +622,12 @@ internal sealed class DeckController : IDisposable
         if (menu != null && pageMotion.Interactive) menu.Render();
         else if (pageMotion.Interactive && !Leaving && !entering)
         {
-            Vector2 searchHint = new(100f, 952f);
-            GFX.Gui["menu/mapsearch"].DrawCentered(searchHint, Color.White);
-            Input.GuiKey(Keys.R).Draw(searchHint, Vector2.Zero, Color.White);
+            // Bound each hint's footprint, rather than assuming native textures are 64px tall.
+            Vector2 searchHint = new(100f, 920f);
+            MTexture icon = GFX.Gui["menu/mapsearch"];
+            float iconScale = Math.Min(1f, 56f / Math.Max(icon.Width, icon.Height));
+            icon.DrawCentered(searchHint, Color.White, iconScale);
+            DrawHintKey(Input.GuiKey(Keys.R), searchHint);
             RenderManageHint(new Vector2(100f, 1016f));
         }
         if (toastTime > 0 && toast != null && pageMotion.Interactive && !Leaving)
@@ -637,7 +652,12 @@ internal sealed class DeckController : IDisposable
         Draw.Rect(position.X - 20f, position.Y - 3f, 14f, 3f, Color.White);
         // Default Tab; reflect any existing user rebind rather than showing a stale hint.
         MTexture key = Input.GuiKey(Input.FirstKey(CompactSaveDeckModule.Settings.ManageDecks.Button));
-        float scale = Math.Min(1f, 56f / Math.Max(1, key.Height));
+        DrawHintKey(key, position);
+    }
+
+    private static void DrawHintKey(MTexture key, Vector2 position)
+    {
+        float scale = Math.Min(1f, 48f / Math.Max(1, key.Height));
         key.Draw(position, Vector2.Zero, Color.White, scale);
     }
     private void RenderDeck(Row row, float y, float open, float offset)
@@ -655,7 +675,7 @@ internal sealed class DeckController : IDisposable
         if (open < 1f)
         {
             float cover = 1f - open;
-            MTexture card = MTN.FileSelect.GetAtlasSubtextures("card")[0];
+            MTexture card = deckCardTexture ??= MTN.FileSelect.GetAtlasSubtextures("card")[0];
             Vector2 center = new(960 + offset, y);
             card.DrawCentered(center + new Vector2(24, 18), new Color(100, 110, 125) * cover);
             card.DrawCentered(center + new Vector2(12, 9), new Color(175, 180, 190) * cover);
@@ -690,6 +710,7 @@ internal sealed class DeckController : IDisposable
             this.controller = controller;
             Tag = Tags.HUD;
             Depth = -10000;
+            Add(new BeforeRenderHook(controller.SyncSlotsForRender));
         }
         public override void Render() => controller.Render();
     }

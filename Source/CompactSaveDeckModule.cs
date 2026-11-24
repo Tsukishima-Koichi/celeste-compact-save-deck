@@ -1,5 +1,6 @@
 using System.Collections;
-using System.Reflection;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 using Monocle;
@@ -14,12 +15,23 @@ public sealed class CompactSaveDeckModule : EverestModule
     private readonly Dictionary<OuiFileSelect, DeckController> controllers = new();
     private readonly Dictionary<OuiFileSelectSlot, DeckController> slotOwners = new();
     private Hook? idleHook;
+    private bool menuHooksInstalled;
     public CompactSaveDeckModule() => Instance = this;
 
     public override void Load()
     {
-        On.Celeste.Overworld.BeforeRender += BeforeRender;
+        var timer = Stopwatch.StartNew();
+        // Title-screen startup needs only the entry point; save-menu detours can wait.
         On.Celeste.OuiFileSelect.Enter += Enter;
+        Logger.Log(LogLevel.Info, "CompactSaveDeck", $"Entry hook loaded in {timer.Elapsed.TotalMilliseconds:F1} ms; menu hooks deferred.");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void EnsureMenuHooks()
+    {
+        if (menuHooksInstalled) return;
+        var timer = Stopwatch.StartNew();
+        menuHooksInstalled = true;
         On.Celeste.OuiFileSelect.Leave += Leave;
         On.Celeste.OuiFileSelect.Update += Update;
         On.Celeste.OuiFileSelect.UnselectHighlighted += Unselect;
@@ -28,21 +40,24 @@ public sealed class CompactSaveDeckModule : EverestModule
         On.Celeste.OuiFileSelectSlot.Render += RenderSlot;
         idleHook = new Hook(typeof(OuiFileSelectSlot).GetProperty(nameof(OuiFileSelectSlot.IdlePosition))!.GetMethod!,
             (Func<Func<OuiFileSelectSlot, Vector2>, OuiFileSelectSlot, Vector2>)IdlePosition);
-        Logger.Log(LogLevel.Info, "CompactSaveDeck", "Vertical save decks loaded.");
+        Logger.Log(LogLevel.Info, "CompactSaveDeck", $"Save-menu hooks initialized in {timer.Elapsed.TotalMilliseconds:F1} ms on first entry.");
     }
 
     public override void Unload()
     {
-        On.Celeste.Overworld.BeforeRender -= BeforeRender;
         On.Celeste.OuiFileSelect.Enter -= Enter;
-        On.Celeste.OuiFileSelect.Leave -= Leave;
-        On.Celeste.OuiFileSelect.Update -= Update;
-        On.Celeste.OuiFileSelect.UnselectHighlighted -= Unselect;
-        On.Celeste.OuiFileSelectSlot.Show -= ShowSlot;
-        On.Celeste.OuiFileSelectSlot.Update -= UpdateSlot;
-        On.Celeste.OuiFileSelectSlot.Render -= RenderSlot;
-        idleHook?.Dispose();
-        idleHook = null;
+        if (menuHooksInstalled)
+        {
+            On.Celeste.OuiFileSelect.Leave -= Leave;
+            On.Celeste.OuiFileSelect.Update -= Update;
+            On.Celeste.OuiFileSelect.UnselectHighlighted -= Unselect;
+            On.Celeste.OuiFileSelectSlot.Show -= ShowSlot;
+            On.Celeste.OuiFileSelectSlot.Update -= UpdateSlot;
+            On.Celeste.OuiFileSelectSlot.Render -= RenderSlot;
+            idleHook?.Dispose();
+            idleHook = null;
+            menuHooksInstalled = false;
+        }
         foreach (var controller in controllers.Values) controller.Dispose();
         controllers.Clear();
         slotOwners.Clear();
@@ -65,6 +80,7 @@ public sealed class CompactSaveDeckModule : EverestModule
             controllers[self] = controller = new DeckController(self);
         }
         if (controller == null) { yield return orig(self, from); yield break; }
+        EnsureMenuHooks();
         controller.BeginEnter();
         // Vanilla requires a real slot index even while our focused item is a deck header.
         self.SlotIndex = Math.Max(0, self.SlotIndex);
@@ -73,7 +89,7 @@ public sealed class CompactSaveDeckModule : EverestModule
         {
             while (routine.MoveNext())
             {
-                if (OuiFileSelect.Loaded && self.Slots.All(s => s != null))
+                if (!controller.Ready && OuiFileSelect.Loaded)
                     controller.Prepare();
                 yield return routine.Current;
             }
@@ -142,13 +158,6 @@ public sealed class CompactSaveDeckModule : EverestModule
         self.Position = controller.PositionFor(self.FileSlot);
         // Native Hide may finish before a later visible row in our shared cascade.
         self.Visible = controller.IsVisible(self.FileSlot);
-    }
-
-    private void BeforeRender(On.Celeste.Overworld.orig_BeforeRender orig, Overworld self)
-    {
-        foreach (DeckController controller in controllers.Values)
-            if (controller.Owner.Scene == self) controller.SyncSlotsForRender();
-        orig(self);
     }
 
     private void RenderSlot(On.Celeste.OuiFileSelectSlot.orig_Render orig, OuiFileSelectSlot self)

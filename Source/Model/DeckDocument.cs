@@ -40,10 +40,17 @@ public sealed class DeckDocument
         }
         var allowed = Decks.Select(d => DeckKey(d.Id)).Concat(present.Except(seen).Select(SaveKey)).ToHashSet();
         RootOrder = (RootOrder ?? new()).Where(allowed.Contains).Distinct().ToList();
+        var rootKeys = RootOrder.ToHashSet();
         foreach (var deck in Decks)
-            if (!RootOrder.Contains(DeckKey(deck.Id))) RootOrder.Add(DeckKey(deck.Id));
+        {
+            string key = DeckKey(deck.Id);
+            if (rootKeys.Add(key)) RootOrder.Add(key);
+        }
         foreach (int slot in present.Except(seen).OrderBy(i => i))
-            if (!RootOrder.Contains(SaveKey(slot))) RootOrder.Add(SaveKey(slot));
+        {
+            string key = SaveKey(slot);
+            if (rootKeys.Add(key)) RootOrder.Add(key);
+        }
     }
 
     public Deck Create(string name, IEnumerable<int> slots)
