@@ -625,7 +625,7 @@ internal sealed class DeckController : IDisposable
             // Bound each hint's footprint, rather than assuming native textures are 64px tall.
             Vector2 searchHint = new(100f, 920f);
             MTexture icon = GFX.Gui["menu/mapsearch"];
-            float iconScale = Math.Min(1f, 56f / Math.Max(icon.Width, icon.Height));
+            float iconScale = 72f / Math.Max(1, Math.Max(icon.Width, icon.Height));
             icon.DrawCentered(searchHint, Color.White, iconScale);
             DrawHintKey(Input.GuiKey(Keys.R), searchHint);
             RenderManageHint(new Vector2(100f, 1016f));

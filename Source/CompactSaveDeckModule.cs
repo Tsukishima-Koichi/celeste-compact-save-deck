@@ -15,17 +15,39 @@ public sealed class CompactSaveDeckModule : EverestModule
     private readonly Dictionary<OuiFileSelect, DeckController> controllers = new();
     private readonly Dictionary<OuiFileSelectSlot, DeckController> slotOwners = new();
     private Hook? idleHook;
+    private bool entryHookInstalled;
     private bool menuHooksInstalled;
     public CompactSaveDeckModule() => Instance = this;
 
     public override void Load()
     {
-        var timer = Stopwatch.StartNew();
-        // Title-screen startup needs only the entry point; save-menu detours can wait.
-        On.Celeste.OuiFileSelect.Enter += Enter;
-        Logger.Log(LogLevel.Info, "CompactSaveDeck", $"Entry hook loaded in {timer.Elapsed.TotalMilliseconds:F1} ms; menu hooks deferred.");
+        // A native event subscription does not construct a MonoMod detour or rewrite a method.
+        // Keep the splash -> black screen -> snow loader path free of our menu hooks.
+        Everest.Events.Celeste.OnSceneTransition += OnSceneTransition;
+        Logger.Log(LogLevel.Info, "CompactSaveDeck", "Native scene event registered; no startup detours installed.");
     }
 
+    public override void Initialize()
+    {
+        base.Initialize();
+        // Also support enabling/reloading the module after the overworld already exists.
+        if (Engine.Scene is Overworld) EnsureEntryHook();
+    }
+
+    private void OnSceneTransition(Scene previous, Scene next)
+    {
+        if (next is Overworld) EnsureEntryHook();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void EnsureEntryHook()
+    {
+        if (entryHookInstalled) return;
+        var timer = Stopwatch.StartNew();
+        On.Celeste.OuiFileSelect.Enter += Enter;
+        entryHookInstalled = true;
+        Logger.Log(LogLevel.Info, "CompactSaveDeck", $"Overworld reached; entry hook initialized in {timer.Elapsed.TotalMilliseconds:F1} ms after the startup loader.");
+    }
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void EnsureMenuHooks()
     {
@@ -45,7 +67,12 @@ public sealed class CompactSaveDeckModule : EverestModule
 
     public override void Unload()
     {
-        On.Celeste.OuiFileSelect.Enter -= Enter;
+        Everest.Events.Celeste.OnSceneTransition -= OnSceneTransition;
+        if (entryHookInstalled)
+        {
+            On.Celeste.OuiFileSelect.Enter -= Enter;
+            entryHookInstalled = false;
+        }
         if (menuHooksInstalled)
         {
             On.Celeste.OuiFileSelect.Leave -= Leave;
