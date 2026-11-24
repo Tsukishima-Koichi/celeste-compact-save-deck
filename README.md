@@ -107,3 +107,9 @@ The current test suite passes **978 assertions**, covering ordering and membersh
 When reporting a problem, include your mod version, Celeste/Everest version, reproduction steps and relevant `log.txt` entries. For menu conflicts, also list other mods that change save selection.
 
 This repository contains the mod source and development notes. Game assets, game assemblies, private test saves and generated build output are excluded.
+
+## License
+
+Original contributions are licensed under **CC BY-NC 4.0**: you may share and modify them for **non-commercial purposes**. When distributing the original or a modified version, credit **Tsukishima-Koichi**, include a link to the license, retain applicable notices, and indicate changes.
+
+See [LICENSE](LICENSE) for the full terms and [NOTICE](NOTICE) for attribution and scope. Celeste, Everest and third-party material retain their respective rights and licenses. This project is source-available under a non-commercial license, rather than an OSI-approved open-source license.

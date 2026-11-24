@@ -9,6 +9,10 @@ Copy-Item -LiteralPath "$projectRoot\bin\Release\net8.0\CompactSaveDeck.dll" -De
 Copy-Item -LiteralPath "$projectRoot\bin\Release\net8.0\CompactSaveDeck.pdb" -Destination "$package\bin"
 Copy-Item -LiteralPath "$projectRoot\everest.yaml" -Destination $package
 Get-ChildItem -LiteralPath "$projectRoot\Dialog" -Filter '*.txt' | Copy-Item -Destination "$package\Dialog"
-if (Test-Path -LiteralPath "$projectRoot\README.md") { Copy-Item -LiteralPath "$projectRoot\README.md" -Destination $package }
+foreach ($document in @('README.md', 'README.zh-CN.md', 'LICENSE', 'NOTICE')) {
+    Copy-Item -LiteralPath (Join-Path $projectRoot $document) -Destination $package
+}
+New-Item -ItemType Directory -Force -Path "$package\docs" | Out-Null
+Copy-Item -LiteralPath "$projectRoot\docs\更新记录.md" -Destination "$package\docs"
 Compress-Archive -Path "$package\*" -DestinationPath "$projectRoot\dist\CompactSaveDeck.zip" -Force
 Write-Output "Package: $projectRoot\dist\CompactSaveDeck.zip"

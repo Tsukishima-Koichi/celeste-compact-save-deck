@@ -107,3 +107,9 @@ dotnet run --project Tests/CompactSaveDeck.Tests.csproj -c Release
 反馈问题时，请提供 Mod 版本、Celeste / Everest 版本、复现步骤和相关 `log.txt` 记录。若是菜单冲突，也请列出其他修改存档界面的 Mod。
 
 仓库包含 Mod 源码和开发记录，不包含游戏素材、游戏程序集、私人测试存档或生成的构建产物。
+
+## 许可
+
+本项目的原创贡献采用 **CC BY-NC 4.0（署名—非商业性使用）**许可：允许为**非商业目的**修改与分享。分发原版或修改版时，须署名 **Tsukishima-Koichi**、提供许可链接、保留适用声明，并说明是否作出修改。
+
+完整条款见 [LICENSE](LICENSE)，署名及适用范围见 [NOTICE](NOTICE)。Celeste、Everest 及第三方内容仍遵循各自的权利与许可。本项目属于非商业许可下的源码公开项目，不属于 OSI 定义的开源许可项目。
