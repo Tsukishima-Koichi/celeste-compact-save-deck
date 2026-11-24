@@ -1,100 +1,109 @@
-# Compact Save Deck — 竖排存档卡组
+# Compact Save Deck
 
-当前版本：0.1.7（可试玩原型）。源码位置：
-`E:\ProgramData\Vision_Studio\CelesteMod_DEV`
+**Expandable save decks for Celeste, with custom ordering and search.**
 
-在 Celeste 原始竖排存档界面中加入可展开的卡组。未归组存档和展开后的组内存档复用游戏原卡片；折叠卡组显示三层纸卡效果。实际进入存档仍调用 Celeste / Everest 的原有操作。
+[简体中文](README.zh-CN.md) · [Changelog](docs/更新记录.md) · [Report an issue](https://github.com/Tsukishima-Koichi/celeste-compact-save-deck/issues)
 
-## 已实现
+Compact Save Deck is an Everest mod that organizes your saves without replacing Celeste's vertical save selection layout. Ungrouped saves keep their original cards. Grouped saves appear as a stack that expands into a vertical list, with animated transitions.
 
-- 多份存档归为一个卡组，卡组命名、改名、展开、收起及解散。
-- 加入已有卡组、移出卡组、批量选择成员。
-- 未归组存档、卡组整体、组内存档的上下排序；确认保存、取消还原。
-- 独立保存分类、顺序、展开状态和焦点；不修改存档编号或移动存档文件。
-- 全部存档与卡组搜索，含折叠卡组成员；回车高亮最佳匹配，保持用户顺序处理同名项。
-- 原有继续、新建、重命名、辅助模式、删除确认及第三方存档按钮仍走原流程。
-- 英文、简体中文菜单文本；卡组命名复用 Everest 的文字输入页面。
-- 原子替换分类配置、上一版备份、损坏恢复、拒绝覆盖未知的新格式。
+**Current version: 0.1.7 — experimental.** Tested on Windows with Celeste 1.4.0.0 FNA and Everest 6696-ultra-de194-stable. Other Everest builds and platforms have not been verified.
 
-## 操作
+## Features
 
-管理、展开和收起使用独立的 Everest 按键绑定；搜索固定使用 R。进入 **Mod 选项 → CompactSaveDeck → 键盘/手柄配置**，可以查看、更改或恢复默认绑定。存档浏览界面和卡组管理菜单不再显示快捷键说明栏。
+- Create, rename and dissolve decks; select members or move saves between decks.
+- Reorder ungrouped saves, entire decks and saves within a deck.
+- Search every save and deck, including saves inside collapsed decks.
+- Identify saves by their name, last map collection / map and slot number.
+- Keep Celeste's native save actions, including continuing, creating, renaming and deleting saves.
+- Use menus with native fonts, selection highlights and animated transitions.
+- English and Simplified Chinese interface text.
 
-| 操作 | 默认绑定 |
-|---|---|
-| 管理卡组 | Tab / 手柄左扳机 |
-| 搜索存档与卡组 | 固定 R，不提供重绑 |
-| 展开卡组 | 右方向键 / 手柄十字键右 |
-| 收起卡组 | 左方向键 / 手柄十字键左 |
-| 浏览、确认、取消 | 沿用游戏菜单的现有绑定 |
+Deck organization does not rename save files or change slot numbers. Dissolving a deck keeps its saves.
 
-管理菜单及其子菜单居中排列，使用原生 TextMenu 字体、选中晃动以及随 Everest 设置变化的绿/黄文字高亮，配合与 Mod 选项一致的 0.25 秒 CubeOut 弹入、CubeIn 弹出。返回键关闭菜单或回到上一层，不再保留 Close 条目。
+## Installation
 
-左下角显示 Everest 的放大镜和 R 键图标；其下方新增卡片堆叠管理图标及 Tab 键标识。两组提示纵向间隔 96 像素，图标与键帽有尺寸上限，避免贴图原尺寸造成重叠。管理按键重绑后，标识同步显示实际键位。在存档页按 R，顶部弹出原生搜索框，同时展开全部存档与卡组的文字列表。存档条目附带最后所在的地图集 / 地图名称，支持按这些名称搜索；无法取得地图信息时显示“未知地图”。输入关键词后回车，高亮并滚动到最佳匹配；精确名称优先，其次是前缀、包含关键词与缩写，也支持槽号（如 #9）。搜索结果仅定位，不进入存档；命中折叠组内存档会展开其卡组，返回后可按普通流程选择。无匹配时提示并保留当前焦点。Back/Esc 返回，搜索时退格用于编辑文字。搜索框沿用 Everest 的文字输入能力。搜索固定为 R，不再提供 Search saves and decks 按键配置项；旧版 FindDeck / SearchSaves 配置不再使用。
+You need an [Everest](https://everestapi.github.io/) installation. The mod manifest requires Everest **1.6696.0 or newer**; the tested build is listed above.
 
-选中卡组后按游戏确认键同样可以展开/收起；组内取消可收起卡组。排序通过“管理 → 调整上下位置”进入，上下移动、确认保存、取消还原，移动对象会有细小的高亮标记。
+1. Obtain `CompactSaveDeck.zip` from [Releases](https://github.com/Tsukishima-Koichi/celeste-compact-save-deck/releases) if a release has been published, or build it using the instructions below.
+2. Close Celeste and place the ZIP in the game's `Mods` directory. You do not need to extract it.
+3. Start Celeste and select **CLIMB**.
 
-展开以约 0.25 秒的 Cubic 缓入缓出排开，邻近卡片有最多 0.06 秒的错峰；下方条目同步让位。收起保留卡片直到回到卡堆，连续操作从当前动画位置接续。展开、收起与排序始终保留完整动画，不再提供“减少卡组动画”选项。
+Keep only one installed copy: either the ZIP or an extracted `Mods/CompactSaveDeck/` folder. GitHub's automatic **Source code** archives are source files, not ready-to-install mod packages.
 
-从主菜单进入存档页时，等待原版显示时机，再让卡组封面和存档卡片按当前竖排顺序滑入；返回主菜单时同步滑出，完成后才隐藏。页面过渡沿用原版的 0.25 秒 Cubic 缓动；绘制前统一原生卡片与卡组的位置、可见性，避免更新顺序造成错帧。
+To disable the mod, use Everest's mod management interface or add the installed package's name to `Mods/blacklist.txt`. Restart the game after changing its enabled state.
 
-未归组项经过展开卡组时会越过整组，不会因排序而自动归组。解散卡组保留其全部存档，并在原组位置展开为普通卡片。
+## Controls
 
-## 环境与构建
+| Action | Default input |
+| --- | --- |
+| Manage decks | **Tab** / controller left trigger |
+| Search saves and decks | **R** (keyboard only, fixed) |
+| Expand a deck | Right arrow / D-pad right |
+| Collapse a deck | Left arrow / D-pad left |
+| Navigate, confirm, go back | Celeste's existing menu bindings |
 
-- Windows 上的 Celeste 1.4.0.0-FNA / Everest Core。
-- 目标框架 net8.0；本机使用 .NET SDK 10.0.201。
-- 当前清单暂定依赖 Everest 1.6696.0；已在本机 6696-ultra-de194-stable 上确认模块加载，其他发行版尚未验证。
-- 工程直接引用本地 Everest 游戏程序集，不复制这些程序集到发布包，不需要额外 NuGet 包。
+Management, expand and collapse bindings can be changed in **Mod Options → CompactSaveDeck → keyboard/controller configuration**. The lower-left magnifying glass and card-stack icons show the search and management shortcuts.
 
-在项目根目录执行：
+### Organize saves
+
+Focus a save or deck and press **Tab** to open its management menu. Select members to create a deck, change membership, rename a deck or dissolve it.
+
+Choose **Move up / down** to reorder the focused item. Move it vertically, then confirm to save or go back to cancel. Saves inside a deck stay within that deck when reordered; an ungrouped save moves past an expanded deck as one block.
+
+Confirming a deck expands or collapses it. Selecting a save opens Celeste's normal save actions. Use the back binding to close a management menu or return to its parent.
+
+### Search
+
+Press **R** on the save selection page. A text box and a list of all saves and decks appear.
+
+Type a save name, map name, deck name or slot number such as `#9`, then press **Enter**. The best match is highlighted and brought into view; searching does **not** enter a save automatically. A match inside a collapsed deck reveals that deck's contents.
+
+Names match by exact text, prefix, substring, multiple keywords or abbreviation. Equally ranked results retain your custom order. Use **Esc/back** to leave search; Backspace edits the query.
+
+## Data and compatibility
+
+Deck metadata is stored in `compact-save-deck.json` inside the active save directory, with the previous version retained as `compact-save-deck.json.bak`. This respects `EVEREST_SAVEPATH` when configured. Back up these files alongside your saves if you want to preserve your organization.
+
+Grouping and ordering do not rewrite the game's save files. Native save actions, such as deleting a save, still behave normally.
+
+Current limitations:
+
+- Mouse dragging and mouse-driven deck management are not implemented.
+- Replacing a save externally with another save at the same slot number retains that slot's deck membership.
+- The native save loader still initializes save slots; very large real-world save collections have not been performance-certified.
+- Other mods that replace the save selection menu may conflict.
+- Everest can log an inlining warning for the `IdlePosition` hook. No related failure has been observed in the tested setup, but compatibility across runtimes is not guaranteed.
+
+## Build from source
+
+Requirements:
+
+- .NET SDK **10.0.201** or a compatible newer .NET 10 feature band, as specified in `global.json`.
+- A local Everest Core installation containing the referenced game assemblies.
+- PowerShell for the packaging/deployment scripts.
+
+The mod targets **net8.0**. Game assemblies are referenced locally and are not bundled with the package.
+
+From the repository root, replace the example path with your installation:
 
 ```powershell
-dotnet build CompactSaveDeck.csproj -c Release
+dotnet build CompactSaveDeck.csproj -c Release "-p:CelestePath=C:\Games\Celeste"
 dotnet run --project Tests/CompactSaveDeck.Tests.csproj -c Release
-.\scripts\Build.ps1
-.\scripts\Deploy.ps1
+.\scripts\Build.ps1 -CelestePath "C:\Games\Celeste"
 ```
 
-默认游戏目录是 `E:\Public\SteamLibrary\steamapps\common\Celeste`。
-可通过 `-p:CelestePath=路径` 或脚本的 `-CelestePath` 参数覆盖。部署前关闭 Celeste。
+The package is written to `dist/CompactSaveDeck.zip`. To build and deploy an extracted development copy, close Celeste and run:
 
-输出：
+```powershell
+.\scripts\Deploy.ps1 -CelestePath "C:\Games\Celeste"
+```
 
-- `dist/CompactSaveDeck.zip`：可分发的 Mod 压缩包。
-- `dist/CompactSaveDeck/`：解包目录。
-- 开发部署位置：游戏目录下 `Mods/CompactSaveDeck/`。
+The deployment script refuses to run while Celeste is running. Remove any separately installed ZIP before using an extracted development copy.
 
-zip 与同名解包目录只保留一种安装方式，避免重复加载。
+## Validation and feedback
 
-## 数据位置与隔离测试
+The current test suite passes **978 assertions**, covering ordering and membership, metadata recovery, search ranking and animation state. Release compilation succeeds with no compiler warnings. These checks do not replace in-game or cross-mod compatibility testing.
 
-卡组配置保存在游戏实际存档目录的 `compact-save-deck.json`，上一版为 `.bak`。数据只记录卡组和槽号关系；本体的 `N.celeste`、modsave、modsession 不由分类/排序功能改写。
+When reporting a problem, include your mod version, Celeste/Everest version, reproduction steps and relevant `log.txt` entries. For menu conflicts, also list other mods that change save selection.
 
-本次测试运行通过进程环境变量 `EVEREST_SAVEPATH` 指向：
-
-`E:\ProgramData\Vision_Studio\CelesteMod_DEV\.research\playtest`
-
-因此测试用的 Saves 与 Backups 均位于该目录。测试中的 Practice Deck 是专门准备的样例，正式存档没有自动归组。退出测试游戏后，正常启动游戏会使用正常存档路径。环境变量没有写入系统或用户环境。
-
-本机 Celeste.exe 在本次直接启动检查中提前退出，因此测试改为通过已安装的 dotnet 运行 Celeste.dll。实际启动仍加载了本机其他 Mod，不能将本次运行描述为纯净的白名单环境。
-
-## 验证结果与当前边界
-
-- Release 编译通过：0 警告、0 错误。
-- 数据层自动检查通过：978 项断言（包含数据、搜索排序、菜单生命周期与页面过渡检查）。
-- 1000 个存档、100 个卡组、4000 次随机分类/排序操作的数据模型检查通过；记录耗时 267 ms。该数字不是游戏帧率或真实存档读取性能。
-- 覆盖组内边界、外层顺序、移出/解散、稀疏槽号、重复条目修复、序列化、备份恢复、未知格式拒绝覆盖、目标文件被锁时保持旧内容。
-- 游戏日志确认 CompactSaveDeck 0.1.0 加载；本次测试准备前后正式存档文件哈希一致。
-- 用户要求后续自行验收画面与交互，因此游戏内全流程、手柄、删除/重命名与第三方扩展按钮尚待反馈；不将数据测试当作这些操作已验证。
-
-启动阶段仅订阅 Everest 原生场景事件，不安装本 Mod 的 MonoMod Hook；进入 Overworld（标题界面场景）后才安装存档页入口 Hook，另外七个菜单 Hook 在首次进入存档页时初始化。初始化耗时分别写入 log.txt。首次进入存档页仍有一次性初始化成本，本轮没有启动游戏测量实际收益。已有启用/禁用历史日志对比见 docs/启动性能记录.md；其中资源加载存在明显波动，不能据此认定黑屏增量全由本 Mod 导致。绘制前同步改为存档页自己的组件，保留过渡修复；缓存卡片贴图、复用行标识，并在动画结束或页面隐藏后跳过多余扫描。
-
-当前采用原有存档加载器，首次打开仍会读取并构造原有存档槽；折叠与屏幕外卡片在稳定浏览时跳过主要更新/绘制，展开、收起与排序使用内存数据。大量真实存档的首次加载、瞬时内存及 P95 帧耗时尚未达到规划中的性能验收阶段。
-
-外部替换同一槽号存档时目前继承该槽号分类，无法可靠区分“恢复备份”与“不同存档覆盖”。若要重新分类，可移出原卡组；后续需补充身份判定策略。
-
-鼠标拖放和鼠标管理操作尚未实现。卡组皮肤、文字位置与动画等待用户试玩后调整。
-
-原生游戏存档读取和保存机制没有更换；本 Mod 仍会调用其他 Mod 的原有 Hook，因此不保证任意菜单替换 Mod 同时启用时兼容。
-
+This repository contains the mod source and development notes. Game assets, game assemblies, private test saves and generated build output are excluded.
