@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>CompactSaveDeck</AssemblyName>
+    <RootNamespace>Celeste.Mod.CompactSaveDeck</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <CelestePath Condition="'$(CelestePath)' == ''">E:\Public\SteamLibrary\steamapps\common\Celeste</CelestePath>
+  </PropertyGroup>
+  <Import Project="local.props" Condition="Exists('local.props')" />
+  <ItemGroup>
+    <Compile Include="Source/**/*.cs" />
+    <Reference Include="Celeste"><HintPath>$(CelestePath)/Celeste.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="FNA"><HintPath>$(CelestePath)/FNA.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MMHOOK_Celeste"><HintPath>$(CelestePath)/MMHOOK_Celeste.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>$(CelestePath)/MonoMod.RuntimeDetour.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>$(CelestePath)/MonoMod.Utils.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.Backports"><HintPath>$(CelestePath)/MonoMod.Backports.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="CheckCeleste" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(CelestePath)/Celeste.dll')" Text="Set CelestePath to an Everest Core installation." />
+  </Target>
+</Project>

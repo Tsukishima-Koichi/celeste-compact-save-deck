@@ -1,0 +1,9 @@
+.tools/
+.research/
+**/bin/
+**/obj/
+dist/
+test-results/
+*.user
+*.suo
+local.props

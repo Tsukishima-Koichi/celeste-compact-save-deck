@@ -1,0 +1,7 @@
+- Name: CompactSaveDeck
+  Version: 0.1.5
+  DLL: bin/CompactSaveDeck.dll
+  Dependencies:
+    - Name: Everest
+      Version: 1.6696.0
+
