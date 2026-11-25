@@ -2,7 +2,6 @@ using System.Collections;
 using Celeste.Mod.CompactSaveDeck.Model;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 
 namespace Celeste.Mod.CompactSaveDeck;
@@ -331,8 +330,9 @@ internal sealed class DeckController : IDisposable
             CompactSaveDeckModule.Settings.ManageDecks.ConsumePress();
             OpenManager();
         }
-        else if (MInput.Keyboard.Pressed(Keys.R))
+        else if (CompactSaveDeckModule.Settings.SearchDecks.Pressed)
         {
+            CompactSaveDeckModule.Settings.SearchDecks.ConsumePress();
             OpenSearch();
         }
         else if (Input.MenuUp.Pressed || Input.MenuDown.Pressed)
@@ -627,7 +627,7 @@ internal sealed class DeckController : IDisposable
             MTexture icon = GFX.Gui["menu/mapsearch"];
             float iconScale = 72f / Math.Max(1, Math.Max(icon.Width, icon.Height));
             icon.DrawCentered(searchHint, Color.White, iconScale);
-            DrawHintKey(Input.GuiKey(Keys.R), searchHint);
+            DrawHintKey(CompactSaveDeckModule.Settings.SearchDecks, searchHint);
             RenderManageHint(new Vector2(100f, 1016f));
         }
         if (toastTime > 0 && toast != null && pageMotion.Interactive && !Leaving)
@@ -650,13 +650,14 @@ internal sealed class DeckController : IDisposable
         }
         Draw.Rect(position.X - 20f, position.Y - 11f, 20f, 3f, Color.White);
         Draw.Rect(position.X - 20f, position.Y - 3f, 14f, 3f, Color.White);
-        // Default Tab; reflect any existing user rebind rather than showing a stale hint.
-        MTexture key = Input.GuiKey(Input.FirstKey(CompactSaveDeckModule.Settings.ManageDecks.Button));
-        DrawHintKey(key, position);
+        // Resolve the current binding at render time, including the active input device.
+        DrawHintKey(CompactSaveDeckModule.Settings.ManageDecks, position);
     }
 
-    private static void DrawHintKey(MTexture key, Vector2 position)
+    private static void DrawHintKey(ButtonBinding binding, Vector2 position)
     {
+        MTexture? key = Input.GuiButton(binding.Button, Input.PrefixMode.Latest, fallback: null);
+        if (key == null) return;
         float scale = Math.Min(1f, 48f / Math.Max(1, key.Height));
         key.Draw(position, Vector2.Zero, Color.White, scale);
     }

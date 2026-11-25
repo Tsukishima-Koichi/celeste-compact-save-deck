@@ -6,7 +6,7 @@
 
 Compact Save Deck is an Everest mod that organizes your saves without replacing Celeste's vertical save selection layout. Ungrouped saves keep their original cards. Grouped saves appear as a stack that expands into a vertical list, with animated transitions.
 
-**Current version: 0.1.7 — experimental.** Tested on Windows with Celeste 1.4.0.0 FNA and Everest 6696-ultra-de194-stable. Other Everest builds and platforms have not been verified.
+**Current version: 0.1.8 — experimental.** Tested on Windows with Celeste 1.4.0.0 FNA and Everest 6696-ultra-de194-stable. Other Everest builds and platforms have not been verified.
 
 ## Features
 
@@ -37,12 +37,12 @@ To disable the mod, use Everest's mod management interface or add the installed 
 | Action | Default input |
 | --- | --- |
 | Manage decks | **Tab** / controller left trigger |
-| Search saves and decks | **R** (keyboard only, fixed) |
+| Search saves and decks | **R** / controller Start |
 | Expand a deck | Right arrow / D-pad right |
 | Collapse a deck | Left arrow / D-pad left |
 | Navigate, confirm, go back | Celeste's existing menu bindings |
 
-Management, expand and collapse bindings can be changed in **Mod Options → CompactSaveDeck → keyboard/controller configuration**. The lower-left magnifying glass and card-stack icons show the search and management shortcuts.
+Search, management, expand and collapse bindings can be changed in **Mod Options → CompactSaveDeck → keyboard/controller configuration**. The lower-left magnifying glass and card-stack icons show the current search and management bindings for the active input device. If multiple inputs are assigned, the first binding is shown.
 
 ### Organize saves
 
@@ -54,7 +54,7 @@ Confirming a deck expands or collapses it. Selecting a save opens Celeste's norm
 
 ### Search
 
-Press **R** on the save selection page. A text box and a list of all saves and decks appear.
+Press the search binding (default **R** / controller Start) on the save selection page. A text box and a list of all saves and decks appear.
 
 Type a save name, map name, deck name or slot number such as `#9`, then press **Enter**. The best match is highlighted and brought into view; searching does **not** enter a save automatically. A match inside a collapsed deck reveals that deck's contents.
 

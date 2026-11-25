@@ -12,6 +12,9 @@ public sealed class CompactSaveDeckSettings : EverestModuleSettings
     [DefaultButtonBinding(Buttons.LeftTrigger, Keys.Tab)]
     public ButtonBinding ManageDecks { get; set; } = new(Buttons.LeftTrigger, Keys.Tab);
 
+    [SettingName("csd_search")]
+    [DefaultButtonBinding(Buttons.Start, Keys.R)]
+    public ButtonBinding SearchDecks { get; set; } = new(Buttons.Start, Keys.R);
 
     [SettingName("csd_expand")]
     [DefaultButtonBinding(Buttons.DPadRight, Keys.Right)]
