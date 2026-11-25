@@ -22,6 +22,7 @@ csd_enabled=启用存档卡组
 csd_collapse=收起卡组
 csd_controls_help=可在下方修改卡组按键；浏览、确认和取消沿用游戏菜单按键。
 csd_search=搜索存档与卡组
+csd_search_decks_placeholder=搜索卡组……
 csd_search_placeholder=搜索存档与卡组……
 csd_deck_label=卡组
 csd_save_label=存档

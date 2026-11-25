@@ -22,6 +22,7 @@ csd_enabled=Enable save decks
 csd_collapse=Collapse deck
 csd_controls_help=Configure deck controls below. Navigation, confirmation and cancellation use the game menu bindings.
 csd_search=Search saves and decks
+csd_search_decks_placeholder=Search decks...
 csd_search_placeholder=Search saves and decks...
 csd_deck_label=Deck
 csd_save_label=Save

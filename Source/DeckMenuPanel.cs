@@ -17,6 +17,20 @@ internal sealed class DeckMenuPanel : IDisposable
     private readonly TextMenuExt.TextBox? searchBox;
     private readonly Action<string, DeckMenuPanel>? search;
     private bool beginTyping;
+    private readonly bool searchOnDemand;
+    private bool searchVisible;
+    private float searchAmount;
+    private int inputCooldown;
+    public bool ShowSearchHint => searchOnDemand && motion.Interactive && !searchVisible;
+
+    public void FinishSearch()
+    {
+        searchBox?.StopTyping();
+        searchVisible = false;
+        beginTyping = false;
+        inputCooldown = 2;
+        Input.MenuConfirm.ConsumePress();
+    }
     private float scroll;
     private bool disposed;
     public bool Closed => motion.Closed;
@@ -28,15 +42,16 @@ internal sealed class DeckMenuPanel : IDisposable
 
     public DeckMenuPanel(Scene scene, Overworld overworld, string title,
         IEnumerable<(Func<string> Label, Action Action)> entries, Action back,
-        Action<string, DeckMenuPanel>? search = null)
+        Action<string, DeckMenuPanel>? search = null, bool searchOnDemand = false)
     {
         this.entries = entries.ToList();
         this.back = back;
         this.search = search;
+        this.searchOnDemand = searchOnDemand;
         view = new TextMenu {
             Active = false, Visible = false, Focused = false, AutoScroll = false,
             RenderAsFocused = true, MinWidth = ViewWidth,
-            InnerContent = search == null ? TextMenu.InnerContentMode.OneColumn : TextMenu.InnerContentMode.TwoColumn, BatchMode = true
+            InnerContent = search == null || searchOnDemand ? TextMenu.InnerContentMode.OneColumn : TextMenu.InnerContentMode.TwoColumn, BatchMode = true
         };
         header = new FittedHeader(title) { Container = view };
         foreach (var entry in this.entries)
@@ -51,13 +66,14 @@ internal sealed class DeckMenuPanel : IDisposable
         if (search != null)
         {
             searchBox = new TextMenuExt.TextBox(overworld) {
-                Container = view, PlaceholderText = Dialog.Clean("csd_search_placeholder")
+                Container = view, PlaceholderText = Dialog.Clean(searchOnDemand ? "csd_search_decks_placeholder" : "csd_search_placeholder")
             };
             searchBox.OnTextChange += _ => Feedback = null;
             searchBox.OnTextInputCharActions['\r'] = _ => SubmitSearch();
             searchBox.OnTextInputCharActions['\n'] = _ => { };
             searchBox.AfterInputConsumed = HandleSearchNavigation;
-            beginTyping = true;
+            beginTyping = !searchOnDemand;
+            searchVisible = !searchOnDemand;
         }
         Audio.Play("event:/ui/main/whoosh_large_in");
     }
@@ -99,6 +115,8 @@ internal sealed class DeckMenuPanel : IDisposable
     public void Update()
     {
         motion.Advance(Engine.RawDeltaTime);
+        if (inputCooldown > 0) inputCooldown--;
+        searchAmount = Calc.Approach(searchAmount, searchVisible ? 1f : 0f, Engine.RawDeltaTime / 0.25f);
         view.Focused = false;
         view.RenderAsFocused = true;
         for (int i = 0; i < buttons.Count; i++)
@@ -132,11 +150,19 @@ internal sealed class DeckMenuPanel : IDisposable
 
     public void HandleInput()
     {
-        if (!motion.Interactive) return;
+        if (!motion.Interactive || inputCooldown > 0) return;
         if (searchBox?.Typing == true)
         {
             // Keyboard text is processed by Everest's TextBox. Gamepad confirm also searches.
             if (Input.MenuConfirm.Pressed) { SubmitSearch(); Input.MenuConfirm.ConsumePress(); }
+            return;
+        }
+        if (searchOnDemand && CompactSaveDeckModule.Settings.SearchDecks.Pressed)
+        {
+            CompactSaveDeckModule.Settings.SearchDecks.ConsumePress();
+            searchVisible = true;
+            beginTyping = true;
+            Feedback = null;
             return;
         }
         if (Input.MenuCancel.Pressed || Input.ESC.Pressed)
@@ -144,7 +170,8 @@ internal sealed class DeckMenuPanel : IDisposable
             Input.MenuCancel.ConsumePress();
             Input.ESC.ConsumePress();
             Audio.Play("event:/ui/main/button_back");
-            back();
+            if (searchOnDemand && searchVisible) FinishSearch();
+            else back();
         }
         else if (buttons.Count > 0)
         {
@@ -161,13 +188,14 @@ internal sealed class DeckMenuPanel : IDisposable
 
     private void HandleSearchNavigation()
     {
-        if (!motion.Interactive) return;
+        if (!motion.Interactive || inputCooldown > 0) return;
         if (Input.ESC.Pressed || Input.MenuCancel.Pressed)
         {
             Input.MenuCancel.ConsumePress();
             Input.ESC.ConsumePress();
             Audio.Play("event:/ui/main/button_back");
-            back();
+            if (searchOnDemand && searchVisible) FinishSearch();
+            else back();
         }
         else if (buttons.Count > 0)
         {
@@ -204,12 +232,12 @@ internal sealed class DeckMenuPanel : IDisposable
             if (y - step * 0.5f < Top || y + step * 0.5f > Bottom) continue;
             buttons[i].Render(new Vector2(x, y + buttons[i].SelectWiggler.Value * 8f), view.Selection == i);
         }
-        if (searchBox == null)
+        if (searchBox == null || (searchOnDemand && searchAmount <= 0))
             header.Render(new Vector2(x, 145), false);
         else
         {
             // Same box and icon as Everest; the input drops in from the top.
-            Vector2 boxPosition = new((1920f - ViewWidth) * 0.5f, 85f - 220f * (1f - alpha));
+            Vector2 boxPosition = new((1920f - ViewWidth) * 0.5f, 85f - 220f * (1f - alpha * (searchOnDemand ? Ease.CubeOut(searchAmount) : 1f)));
             searchBox.Alpha = alpha;
             searchBox.TextBoxColor = Color.DarkSlateGray * (0.8f * alpha);
             Draw.HollowRect(boxPosition.X - 2, boxPosition.Y - 2, ViewWidth + 4, searchBox.Height() + 4, Color.White * alpha);

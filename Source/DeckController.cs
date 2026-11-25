@@ -403,13 +403,13 @@ internal sealed class DeckController : IDisposable
     }
 
     private static MenuItem Item(string key, Action action) => new(() => T(key), action);
-    private void SetMenu(string title, IEnumerable<MenuItem> entries, Action? back = null)
+    private void SetMenu(string title, IEnumerable<MenuItem> entries, Action? back = null, Action<string, DeckMenuPanel>? search = null)
     {
         var snapshot = entries.ToList();
-        if (menu != null) { CloseMenu(() => SetMenu(title, snapshot, back)); return; }
+        if (menu != null) { CloseMenu(() => SetMenu(title, snapshot, back, search)); return; }
         menu = new DeckMenuPanel(Owner.Scene, Owner.Overworld, title,
             snapshot.Select(item => (item.Label, item.Action)),
-            () => CloseMenu(back));
+            () => CloseMenu(back), search, searchOnDemand: search != null);
         inputCooldown = 1;
     }
 
@@ -452,11 +452,24 @@ internal sealed class DeckController : IDisposable
     }
     private void ChooseDeck(int slot)
     {
-        var entries = document.Decks.Select(deck => new MenuItem(() => deck.Name,
+        var decks = document.Decks.OrderBy(deck => deck.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        var catalog = decks.Select(deck => new SaveSearchEntry(DeckDocument.DeckKey(deck.Id), deck.Name, "", null, true)).ToList();
+        var entries = decks.Select(deck => new MenuItem(() => deck.Name,
             () => Commit(() => document.Assign(slot, deck.Id), DeckDocument.DeckKey(deck.Id)))).ToList();
         entries.Add(Item("create_from_here", () => NamePrompt(T("default_deck"), name =>
             Commit(() => { var d = document.Create(name, new[] { slot }); focusKey = DeckDocument.DeckKey(d.Id); }))));
-        SetMenu(T("assign"), entries, OpenManager);
+        SetMenu(T("assign"), entries, OpenManager, (query, panel) =>
+        {
+            int match = DeckSearch.BestIndex(catalog, query);
+            if (match < 0)
+            {
+                panel.Feedback = T("no_match");
+                Audio.Play("event:/ui/main/button_invalid");
+                return;
+            }
+            panel.Highlight(match);
+            panel.FinishSearch();
+        });
     }
 
     private IEnumerable<int> OrderedSlots()
@@ -603,9 +616,9 @@ internal sealed class DeckController : IDisposable
 
     internal void Render()
     {
-        // Overworld.Current is null during Enter/Leave; Next identifies the incoming page.
-        if (!Ready || !pageMotion.Drawing ||
-            (!Owner.Selected && Owner.Overworld.Next != Owner && !pageMotion.Exiting) || Owner.SlotSelected) return;
+        // GotoRoutine clears Current before the nested Leave coroutine starts.
+        // Keep drawing through that hand-off; pageMotion hides us only after the exit finishes.
+        if (!Ready || !pageMotion.Drawing || Owner.SlotSelected) return;
         foreach (VisualRow visual in visualRows.Values)
         {
             Row row = visual.Row;
@@ -619,22 +632,30 @@ internal sealed class DeckController : IDisposable
                 Draw.Rect(154f + offset, y - Math.Min(100f, row.Height / 3f), 5f,
                     Math.Min(200f, row.Height * 2f / 3f), Color.LightGoldenrodYellow);
         }
-        if (menu != null && pageMotion.Interactive) menu.Render();
+        if (menu != null && pageMotion.Interactive)
+        {
+            menu.Render();
+            if (menu.ShowSearchHint) RenderSearchHint();
+        }
         else if (pageMotion.Interactive && !Leaving && !entering)
         {
-            // Bound each hint's footprint, rather than assuming native textures are 64px tall.
-            Vector2 searchHint = new(100f, 920f);
-            MTexture icon = GFX.Gui["menu/mapsearch"];
-            float iconScale = 72f / Math.Max(1, Math.Max(icon.Width, icon.Height));
-            icon.DrawCentered(searchHint, Color.White, iconScale);
-            DrawHintKey(CompactSaveDeckModule.Settings.SearchDecks, searchHint);
-            RenderManageHint(new Vector2(100f, 1016f));
+            RenderSearchHint();
+            RenderManageHint(new Vector2(68f, 1016f));
         }
         if (toastTime > 0 && toast != null && pageMotion.Interactive && !Leaving)
         {
             Draw.Rect(180, 20, 1560, 65, Color.Black * 0.9f);
             Text(toast, new Vector2(960, 52), 0.5f, Color.LightSalmon);
         }
+    }
+
+    private static void RenderSearchHint()
+    {
+        Vector2 position = new(68f, 920f);
+        MTexture icon = GFX.Gui["menu/mapsearch"];
+        float scale = 72f / Math.Max(1, Math.Max(icon.Width, icon.Height));
+        icon.DrawCentered(position, Color.White, scale);
+        DrawHintKey(CompactSaveDeckModule.Settings.SearchDecks, position);
     }
 
     private static void RenderManageHint(Vector2 position)

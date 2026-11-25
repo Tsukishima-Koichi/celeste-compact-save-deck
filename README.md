@@ -6,7 +6,7 @@
 
 Compact Save Deck is an Everest mod that organizes your saves without replacing Celeste's vertical save selection layout. Ungrouped saves keep their original cards. Grouped saves appear as a stack that expands into a vertical list, with animated transitions.
 
-**Current version: 0.1.8 — experimental.** Tested on Windows with Celeste 1.4.0.0 FNA and Everest 6696-ultra-de194-stable. Other Everest builds and platforms have not been verified.
+**Current version: 0.1.9 — experimental.** Tested on Windows with Celeste 1.4.0.0 FNA and Everest 6696-ultra-de194-stable. Other Everest builds and platforms have not been verified.
 
 ## Features
 
@@ -51,6 +51,8 @@ Focus a save or deck and press **Tab** to open its management menu. Select membe
 Choose **Move up / down** to reorder the focused item. Move it vertically, then confirm to save or go back to cancel. Saves inside a deck stay within that deck when reordered; an ungrouped save moves past an expanded deck as one block.
 
 Confirming a deck expands or collapses it. Selecting a save opens Celeste's normal save actions. Use the back binding to close a management menu or return to its parent.
+
+In **Move to deck**, decks are listed alphabetically (ignoring letter case). Press the search binding to search deck names; Enter highlights the best match and closes the input. Confirm separately to move the save. Back cancels the search input.
 
 ### Search
 
